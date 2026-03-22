@@ -18,6 +18,9 @@ export interface Flashcard {
   word_tr: string;
   context_sentence: string;
   pronunciation: string;
+  synonyms: string[];
+  antonyms: string[];
+  clue?: string;
   ease_factor: number;
   interval: number;
   next_review: string;
@@ -37,4 +40,7 @@ export interface UserStats {
   total_flashcards: number;
   due_for_review: number;
   average_ease_factor: number;
+  perfect_cards: number;
+  good_cards: number;
+  struggling_cards: number;
 }

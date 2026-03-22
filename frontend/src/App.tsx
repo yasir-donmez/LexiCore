@@ -70,7 +70,7 @@ function App() {
         <section className="p-10">
           {view === 'upload' && <UploadScreen onUploadSuccess={handleUploadSuccess} />}
           {view === 'study' && activeDeckId && <StudyScreen deckId={activeDeckId} onBack={() => setView('upload')} />}
-          {view === 'stats' && <StatsScreen />}
+          {view === 'stats' && <StatsScreen onSelectDeck={handleUploadSuccess} />}
         </section>
       </main>
     </div>

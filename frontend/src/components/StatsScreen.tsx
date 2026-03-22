@@ -1,18 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, Users, BookOpen, Clock } from 'lucide-react';
-import { getUserStats } from '../lib/api';
-import type { UserStats } from '../types/index';
+import { TrendingUp, Users, BookOpen, Clock, Play } from 'lucide-react';
+import { getUserStats, getUserDecks } from '../lib/api';
+import type { UserStats, Deck } from '../types/index';
 
-export const StatsScreen: React.FC = () => {
+interface StatsScreenProps {
+  onSelectDeck: (deckId: string) => void;
+}
+
+export const StatsScreen: React.FC<StatsScreenProps> = ({ onSelectDeck }) => {
   const [stats, setStats] = useState<UserStats | null>(null);
+  const [decks, setDecks] = useState<Deck[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const data = await getUserStats('test-user-123');
-        setStats(data);
+        const [statsData, decksData] = await Promise.all([
+          getUserStats('test-user-123'),
+          getUserDecks('test-user-123')
+        ]);
+        setStats(statsData);
+        setDecks(decksData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
       } catch (err) {
         console.error(err);
       } finally {
@@ -32,11 +41,12 @@ export const StatsScreen: React.FC = () => {
   ];
 
   const chartData = [
-    { name: 'Öğrenilen', value: stats.total_flashcards - stats.due_for_review },
-    { name: 'Bekleyen', value: stats.due_for_review },
+    { name: 'Kusursuz', value: stats.perfect_cards },
+    { name: 'Gelişen', value: stats.good_cards },
+    { name: 'Zorlanılan', value: stats.struggling_cards },
   ];
 
-  const COLORS = ['#10b981', '#f59e0b'];
+  const COLORS = ['#10b981', '#3b82f6', '#ef4444'];
 
   return (
     <div className="max-w-5xl mx-auto p-6">
@@ -76,7 +86,7 @@ export const StatsScreen: React.FC = () => {
         </div>
 
         <div className="glass p-8 rounded-[40px] flex flex-col">
-          <h2 className="text-xl font-bold mb-6">Kelime Durumu</h2>
+          <h2 className="text-xl font-bold mb-6">Kelime Hakimiyeti</h2>
           <div className="flex-1 flex items-center justify-center h-64">
              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -98,15 +108,42 @@ export const StatsScreen: React.FC = () => {
              </ResponsiveContainer>
              <div className="flex flex-col gap-4 pr-10">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span className="text-sm font-medium text-slate-600">Öğrenilen: {chartData[0].value}</span>
+                  <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                  <span className="text-sm font-medium text-slate-600">Kusursuz: {chartData[0].value}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                  <span className="text-sm font-medium text-slate-600">Bekleyen: {chartData[1].value}</span>
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <span className="text-sm font-medium text-slate-600">Gelişen: {chartData[1].value}</span>
                 </div>
-             </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <span className="text-sm font-medium text-slate-600">Zorlanılan: {chartData[2].value}</span>
+                </div>
+              </div>
           </div>
+        </div>
+      </div>
+
+      <div className="mt-8 glass p-8 rounded-[40px]">
+        <h2 className="text-xl font-bold mb-6 text-slate-800">Geçmiş Destelerim (Dashboard)</h2>
+        <div className="flex flex-col gap-4">
+          {decks.map((deck) => (
+            <div key={deck.deck_id} className="bg-white/60 hover:bg-white transition flex items-center justify-between p-5 rounded-3xl border border-slate-100 shadow-sm group">
+              <div>
+                <h3 className="font-bold text-slate-700">{deck.source_pdf_name}</h3>
+                <p className="text-xs text-slate-400 mt-1">{new Date(deck.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+              </div>
+              <button 
+                onClick={() => onSelectDeck(deck.deck_id)}
+                className="w-10 h-10 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center group-hover:bg-primary-600 group-hover:text-white transition-all shadow-sm"
+              >
+                <Play className="w-4 h-4 ml-1" />
+              </button>
+            </div>
+          ))}
+          {decks.length === 0 && (
+            <div className="text-center text-slate-400 py-10">Henüz hiçbir desteniz bulunmuyor.</div>
+          )}
         </div>
       </div>
     </div>

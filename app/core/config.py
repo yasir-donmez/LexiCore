@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 class Settings(BaseSettings):
@@ -6,8 +6,8 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     GEMINI_API_KEY: str
     FIRESTORE_PROJECT_ID: Optional[str] = None
+    ENV: str = "development"
     
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()

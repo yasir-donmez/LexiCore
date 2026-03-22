@@ -14,7 +14,7 @@ class ScoringService:
         similarity: float, 
         old_ease_factor: float, 
         old_interval: int,
-        threshold: float = 0.85
+        threshold: float = 0.75
     ) -> Tuple[float, int]:
         """
         Updates flashcard metrics (ease_factor, interval) based on similarity.
@@ -30,7 +30,15 @@ class ScoringService:
             else:
                 new_interval = round(old_interval * old_ease_factor)
             
-            new_ease_factor = old_ease_factor + 0.1
+            # Proportional Grading: Cut points or heavily reward based on string distance
+            if similarity >= 0.95:
+                ease_change = 0.15
+            elif similarity >= 0.85:
+                ease_change = 0.05
+            else:
+                ease_change = -0.05 # Barely correct, cut points slightly
+                
+            new_ease_factor = max(1.3, old_ease_factor + ease_change)
         else:
             # Incorrect answer logic: reset interval, drop ease
             new_ease_factor = max(1.3, old_ease_factor - 0.2)
@@ -42,6 +50,7 @@ class ScoringService:
     def evaluate_answer(
         actual: str, 
         expected: str, 
+        alternatives: list,
         current_ease_factor: float, 
         current_interval: int
     ) -> dict:
@@ -49,11 +58,18 @@ class ScoringService:
         Evaluates user answer and returns updated metrics.
         Returns: {new_ease_factor, new_interval, is_correct, similarity_ratio}
         """
-        similarity = ScoringService.calculate_similarity(actual, expected)
-        is_correct = similarity >= 0.85
+        all_expected = [expected] + (alternatives if alternatives is not None else [])
+        best_similarity = 0.0
+        
+        for exp in all_expected:
+            sim = ScoringService.calculate_similarity(actual, exp)
+            if sim > best_similarity:
+                best_similarity = sim
+                
+        is_correct = best_similarity >= 0.75
         
         new_ease, new_interval = ScoringService.update_flashcard_metrics(
-            similarity, 
+            best_similarity, 
             current_ease_factor, 
             current_interval
         )
@@ -62,5 +78,5 @@ class ScoringService:
             "new_ease_factor": new_ease,
             "new_interval": new_interval,
             "is_correct": is_correct,
-            "similarity_ratio": float(f"{similarity:.2f}")
+            "similarity_ratio": float(f"{best_similarity:.2f}")
         }
